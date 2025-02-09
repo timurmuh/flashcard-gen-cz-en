@@ -1,0 +1,16 @@
+{
+  "name": "czech-vocab",
+  "module": "index.ts",
+  "type": "module",
+  "devDependencies": {
+    "@eslint/js": "^9.20.0",
+    "@types/bun": "latest",
+    "eslint": "^9.20.0",
+    "eslint-config-prettier": "^10.0.1",
+    "globals": "^15.14.0",
+    "typescript-eslint": "^8.23.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
