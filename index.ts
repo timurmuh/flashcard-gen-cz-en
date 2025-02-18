@@ -3,6 +3,7 @@ import OpenAI from "openai";
 import {z} from "zod";
 import {zodResponseFormat} from "openai/helpers/zod";
 import {getEnvVar, removeUnsupportedProperties} from "./util.ts";
+import flashcardPrompt from "./flashcard_prompt.txt";
 
 const OPENAI_API_KEY = getEnvVar("OPENAI_API_KEY");
 const OPENAI_BASE_URL = getEnvVar("OPENAI_BASE_URL");
@@ -24,9 +25,9 @@ const FlashcardCompletionResponse = z.array(
 
 /**
  * Get a completion for a flashcard
- * @param czWord a word in Czech
+ * @param czWords a list of words in Czech
  */
-async function getFlashcardCompletion(czWord: string) {
+async function getFlashcardCompletion(czWords: string[]) {
   const responseFormat = removeUnsupportedProperties(zodResponseFormat(FlashcardCompletionResponse, 'czech_english_flashcards_response'));
 
   const params: OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming = {
@@ -34,13 +35,12 @@ async function getFlashcardCompletion(czWord: string) {
     messages: [
       {
         role: 'system',
-        content: `
-You are a Czech language teacher. You will be given words in Czech. You will be creating text for flashcards that map English words to Czech words. Since words don’t always map 1 to 1 between languages, you will be listing all possible translations within different usage contexts. For each Czech word and each possible translation / usage context you must output the following the following in a strict json format: word in Czech, context sentence in Czech, word in English, context sentence in English.`
+        content: flashcardPrompt,
       },
-      {
+      ...czWords.map(czWord => ({
         role: 'user',
         content: czWord
-      }
+      }) as OpenAI.Chat.Completions.ChatCompletionMessageParam),
     ],
     response_format: responseFormat,
   }
@@ -56,7 +56,19 @@ You are a Czech language teacher. You will be given words in Czech. You will be 
 }
 
 function main() {
-  getFlashcardCompletion("kůň")
+  getFlashcardCompletion([
+    "pak",
+    "musím",
+    "asi",
+    "řekl",
+    "budu",
+    "říct",
+    "před",
+    "někdo",
+    "hej",
+    "všichni",
+    "opravdu",
+  ])
     .then((response) => {
       console.log(JSON.stringify(response, null, 2));
     })
