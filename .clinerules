@@ -1,0 +1,27 @@
+## Project Intelligence
+
+### Technologies Used
+
+- TypeScript
+- Node.js
+- OpenRouter API (Gemini Flash 2.0)
+- XTTS-v2 (ideally hosted locally via Docker)
+- Anki
+
+### Tool Usage Patterns
+
+- read_file: Used to read memory bank files.
+- apply_diff: Used to update memory bank files.
+- write_to_file: Used to create `.clinerules` file.
+
+### Evolution of Project Decisions
+
+- Using Gemini Flash 2.0 via OpenRouter for flashcard generation to save costs.
+- Using XTTS-v2 for pronunciation audio generation, ideally hosted locally via Docker.
+- Using the "Import text file" workflow in Anki for importing flashcards.
+
+### Known Challenges
+
+- Cost limitations when using OpenRouter API.
+- Local hosting of XTTS-v2 may require significant computational resources.
+- The need to handle potential rate limits from the OpenRouter API.
