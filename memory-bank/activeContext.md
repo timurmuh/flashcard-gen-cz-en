@@ -12,6 +12,7 @@ The current work focus is on updating the memory bank with the latest project in
 - Updated `techContext.md` with technologies used and dependencies.
 - Created `.clinerules` file.
 - Read all memory bank files.
+- Updated `.clinerules` file with tool usage patterns, evolution of project decisions, and known challenges.
 
 ### Next Steps
 

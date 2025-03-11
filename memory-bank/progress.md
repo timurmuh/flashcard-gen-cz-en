@@ -6,6 +6,7 @@
 - Updated `productContext.md`, `systemPatterns.md`, and `techContext.md` with relevant project information.
 - Read all memory bank files.
 - Created `.clinerules` file.
+- Updated `.clinerules` file with tool usage patterns, evolution of project decisions, and known challenges.
 
 ### What's Left to Build
 
@@ -18,7 +19,7 @@
 
 ### Current Status
 
-The memory bank has been initialized and updated with the initial project context. The `.clinerules` file has been created. The next step is to implement the core functionality of the flashcard generator.
+The memory bank has been initialized and updated with the initial project context. The `.clinerules` file has been created and updated with tool usage patterns, evolution of project decisions, and known challenges. The next step is to implement the core functionality of the flashcard generator.
 
 ### Known Issues
 
