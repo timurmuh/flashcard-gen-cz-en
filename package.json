@@ -2,19 +2,22 @@
   "name": "czech-vocab",
   "module": "index.ts",
   "type": "module",
+  "scripts": {
+    "start": "bun index.ts"
+  },
   "devDependencies": {
-    "@eslint/js": "^9.20.0",
+    "@eslint/js": "^9.23.0",
     "@types/bun": "latest",
-    "eslint": "^9.20.0",
-    "eslint-config-prettier": "^10.0.1",
-    "globals": "^15.14.0",
-    "typescript-eslint": "^8.23.0"
+    "eslint": "^9.23.0",
+    "eslint-config-prettier": "^10.1.1",
+    "globals": "^15.15.0",
+    "typescript-eslint": "^8.27.0"
   },
   "peerDependencies": {
-    "typescript": "^5.0.0"
+    "typescript": "^5.7.3"
   },
   "dependencies": {
-    "openai": "^4.83.0",
-    "zod": "^3.24.1"
+    "openai": "^4.89.0",
+    "zod": "^3.24.2"
   }
 }

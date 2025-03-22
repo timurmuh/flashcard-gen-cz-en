@@ -8,6 +8,7 @@ export function getEnvVar(name: string) {
   return value;
 }
 
+// created because Google Gemini 2.0 for some reason does not accept `additionalProperties` in the JSON schema
 export function removeUnsupportedProperties(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   obj: Record<string, any>
