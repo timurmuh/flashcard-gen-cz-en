@@ -1,12 +1,12 @@
-import {getEnvVar, removeUnsupportedProperties} from "./lib/util.ts";
-import {zodResponseFormat} from "openai/helpers/zod";
-import OpenAI from "openai";
-import flashcardPrompt from "../flashcard_prompt.txt";
-import {z} from "zod";
+import { getEnvVar, removeUnsupportedProperties } from './lib/util.ts';
+import { zodResponseFormat } from 'openai/helpers/zod';
+import OpenAI from 'openai';
+import flashcardPrompt from '../flashcard_prompt.txt';
+import { z } from 'zod';
 
-const OPENAI_API_KEY = getEnvVar("OPENAI_API_KEY");
-const OPENAI_BASE_URL = getEnvVar("OPENAI_BASE_URL");
-const MODEL_NAME = getEnvVar("MODEL_NAME");
+const OPENAI_API_KEY = getEnvVar('OPENAI_API_KEY');
+const OPENAI_BASE_URL = getEnvVar('OPENAI_BASE_URL');
+const MODEL_NAME = getEnvVar('MODEL_NAME');
 
 const client = new OpenAI({
   apiKey: OPENAI_API_KEY,
@@ -24,7 +24,7 @@ const FlashcardCompletionResponseSchema = z
           .string()
           .describe('A sentence in English that uses the word, translated from the Czech context'),
       })
-      .describe('A flashcard mapping a Czech word to an English word, along with usage context')
+      .describe('A flashcard mapping a Czech word to an English word, along with usage context'),
   )
   .describe('A list of flashcards mapping Czech words to English words');
 
@@ -36,7 +36,7 @@ type FlashcardCompletionResponse = z.infer<typeof FlashcardCompletionResponseSch
  */
 export async function getFlashcardCompletion(czWord: string): Promise<FlashcardCompletionResponse> {
   const responseFormat = removeUnsupportedProperties(
-    zodResponseFormat(FlashcardCompletionResponseSchema, 'czech_english_flashcards_response')
+    zodResponseFormat(FlashcardCompletionResponseSchema, 'czech_english_flashcards_response'),
   );
 
   const params: OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming = {
@@ -56,7 +56,7 @@ export async function getFlashcardCompletion(czWord: string): Promise<FlashcardC
       {
         role: 'user',
         content: czWord,
-      } as OpenAI.Chat.Completions.ChatCompletionMessageParam
+      } as OpenAI.Chat.Completions.ChatCompletionMessageParam,
     ],
     response_format: responseFormat,
   };
@@ -117,12 +117,11 @@ function parseTimeInterval(interval: string): number {
 // TODO try responses API
 /**
  * Fetches the current credit information from OpenRouter
- * This is extracted as a standalone function for use with getUpdatedRateLimit
  */
-export async function fetchOpenRouterRateLimit(apiKey: string): Promise<number> {
-  const response = await fetch("https://openrouter.ai/api/v1/auth/key", {
+export async function fetchOpenRouterRateLimit(): Promise<number> {
+  const response = await fetch('https://openrouter.ai/api/v1/auth/key', {
     headers: {
-      Authorization: `Bearer ${apiKey}`,
+      Authorization: `Bearer ${OPENAI_API_KEY}`,
     },
   });
 

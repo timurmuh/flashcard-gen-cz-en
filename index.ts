@@ -1,6 +1,7 @@
 // Gather environment variables
 import {generateSpeech, type SpeechGenerationSuccess} from "./src/tts.ts";
 import {getFlashcardCompletion} from "./src/flashcards.ts";
+import { Queue } from 'bullmq';
 
 // TODO queue for translation jobs
 //  - global concurrency 100, initial interval 1000 / cap 1
@@ -8,8 +9,16 @@ import {getFlashcardCompletion} from "./src/flashcards.ts";
 //  - periodically check /auth/key and update rate limit; do it every cap*5 jobs
 //  - on completion, put all text into csv for anki, and create 4 jobs for generating audio (audio name is hash of text)
 
+const translationQueue = new Queue('cz_translation_jobs');
+
+// TODO worker for translation jobs
+//  - handle translation
+//  - handle rate limit check / update
+
 // TODO queue for audio generation jobs
 //  - use existing cli version for now
+
+const audioQueue = new Queue('cz_audio_jobs');
 
 // TODO report progress in terminal - print pending/completed/failed/total jobs for both queues
 //  - maybe get some tui / terminal logging library for this?
