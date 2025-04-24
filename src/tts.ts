@@ -1,5 +1,5 @@
 import { spawn } from 'child_process';
-import { mkdir } from 'fs/promises';
+import { mkdir, writeFile } from 'fs/promises';
 import { dirname } from 'path';
 
 // Constants
@@ -102,4 +102,64 @@ export async function generateSpeechViaCli(
       });
     });
   });
+}
+
+/**
+ * Generate speech by sending a request to a TTS HTTP API
+ *
+ * @param text - The text to convert to speech
+ * @param outPath - The output path where the audio file will be saved
+ * @param baseUrl - The base URL of the TTS server (default: http://localhost:5002)
+ * @returns A Promise with information about the generation
+ */
+export async function generateSpeechViaHttp(
+  text: string,
+  outPath: string,
+  baseUrl: string,
+): Promise<SpeechGenerationResult> {
+  console.log(`Generating speech for "${text}" to ${outPath} using ${baseUrl}`);
+  if (!outPath) {
+    throw new Error('Output path is required!');
+  }
+
+  // Ensure the directory exists
+  const outputDir = dirname(outPath);
+  await mkdir(outputDir, { recursive: true });
+
+  try {
+    // Encode text for URL
+    const encodedText = encodeURIComponent(text);
+    const url = `${baseUrl}/api/tts?text=${encodedText}`;
+
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      return {
+        text,
+        outputFile: outPath,
+        success: false,
+        error: `Server responded with status: ${response.status}`,
+        code: response.status,
+      };
+    }
+
+    // Get audio data as ArrayBuffer
+    const audioData = await response.arrayBuffer();
+
+    // Save file
+    await writeFile(outPath, Buffer.from(audioData));
+
+    return {
+      text,
+      outputFile: outPath,
+      success: true,
+    };
+  } catch (error) {
+    return {
+      text,
+      outputFile: outPath,
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
 }

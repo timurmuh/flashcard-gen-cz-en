@@ -1,16 +1,28 @@
-import { Queue, Worker } from 'bullmq';
-import { generateSpeechViaCli, type SpeechGenerationSuccess } from './src/tts.ts';
+import { Job, Queue, Worker } from 'bullmq';
+import { generateSpeechViaHttp, type SpeechGenerationResult } from './src/tts.ts';
 import { getFlashcardCompletion } from './src/flashcards.ts';
-import {
-  QUEUE_NAME_TRANSLATION,
-  AUDIO_QUEUE_NAME,
-  JOB_NAME_TRANSLATION,
-  AUDIO_JOB_NAME,
-} from './src/constants.ts';
-import { createHash } from 'crypto';
-import fs from 'fs';
+import { AUDIO_JOB_NAME, AUDIO_QUEUE_NAME, JOB_NAME_TRANSLATION, QUEUE_NAME_TRANSLATION } from './src/constants.ts';
 import path from 'path';
 import IORedis from 'ioredis';
+import { parseArgs } from 'node:util';
+import { writeTranslationToCsv } from './src/csvFiles.ts';
+
+import { hashString } from './src/lib/util.ts';
+
+// Parse command line arguments
+const { values } = parseArgs({
+  options: {
+    'tts-backends': {
+      type: 'string',
+      short: 't',
+      multiple: true,
+      default: ['http://localhost:5002'],
+    },
+  },
+});
+
+const ttsBackends = values['tts-backends'] as string[];
+console.log(`Using TTS backends: ${ttsBackends.join(', ')}`);
 
 const connection = new IORedis({
   host: 'localhost',
@@ -27,40 +39,6 @@ const translationQueue = new Queue(QUEUE_NAME_TRANSLATION, {
 const audioQueue = new Queue(AUDIO_QUEUE_NAME, {
   connection,
 });
-
-// Define proper type for translation entries
-type TranslationEntry = {
-  czechWord: string;
-  czechContext: string;
-  englishWord: string;
-  englishContext: string;
-  czechWordAudio?: string;
-  czechContextAudio?: string;
-}
-
-function writeTranslationToCsv(translation: TranslationEntry[], csvPath: string) {
-  // Ensure CSV file exists with header
-  // if (!fs.existsSync(csvPath)) {
-  //   fs.writeFileSync(csvPath, 'czechWord,czechContext,englishWord,englishContext,czechWordAudio,czechContextAudio\n');
-  // }
-
-  // TODO handle newlines in the data; check the docs for Anki or simply cut out the newlines, replacing them with
-  //  spaces and ensuring that there is only at most a single space at once
-
-  const wrapSound = (str?: string) => {
-    return str ? `[sound:${str}]` : '';
-  };
-
-  // Append translation entries
-  translation.forEach(({ czechWord, czechContext, englishWord, englishContext, czechWordAudio, czechContextAudio }) => {
-    const csvLine = `${czechWord},${czechContext},${englishWord},${englishContext},${wrapSound(czechWordAudio)},${wrapSound(czechContextAudio)}\n`;
-    fs.appendFileSync(csvPath, csvLine);
-  });
-}
-
-function hashString(str: string): string {
-  return createHash('sha256').update(str).digest('hex');
-}
 
 // Worker for translation jobs
 const translationWorker = new Worker(
@@ -110,22 +88,34 @@ const translationWorker = new Worker(
   },
 );
 
-// Worker for audio generation jobs
-const audioWorker = new Worker(
-  AUDIO_QUEUE_NAME,
-  async (job) => {
-    const { word, outputPath } = job.data;
+// Audio worker factory that creates a worker for each TTS backend
+function createAudioWorker(baseUrl: string): Worker {
+  return new Worker(
+    AUDIO_QUEUE_NAME,
+    async (job: Job) => {
+      console.log('Audio job', job.id, job.data);
+      const { word, outputFile } = job.data;
+      const outPath = `audio/${outputFile}`;
 
-    // Generate audio using CLI
-    // TODO use server for audio generation
-    const result: SpeechGenerationSuccess = await generateSpeechViaCli(word, `audio/${outputPath}`);
-    console.log(`Audio generated: ${result.outputFile}`, result);
-  },
-  {
-    connection,
-    concurrency: process.platform === 'darwin' ? 1 : 10, // Concurrency 1 on macOS
-  },
-);
+      const result: SpeechGenerationResult = await generateSpeechViaHttp(word, outPath, baseUrl);
+
+      if (result.success) {
+        console.log(`Audio generated from ${baseUrl}: ${result.outputFile}`, result);
+        return result;
+      } else {
+        throw result;
+      }
+
+    },
+    {
+      connection,
+      concurrency: process.platform === 'darwin' ? 1 : 10, // Concurrency 1 on macOS
+    },
+  );
+}
+
+// Create workers for each TTS backend
+const audioWorkers = ttsBackends.map(baseUrl => createAudioWorker(baseUrl));
 
 async function logQueueProgress() {
   const translationCounts = await translationQueue.getJobCounts();
@@ -144,7 +134,6 @@ async function logQueueProgress() {
   // Create concise status summary
   const formatStatusSummary = (counts: Record<string, number>) => {
     return Object.entries(counts)
-      // .filter(([_, count]) => count > 0)
       .map(([status, count]) => `${status.charAt(0)}:${count}`)
       .join(' ');
   };
@@ -160,7 +149,12 @@ setInterval(logQueueProgress, 2000);
 // Handle application shutdown to properly close workers
 process.on('SIGINT', async () => {
   await translationWorker.close();
-  await audioWorker.close();
+
+  // Close all audio workers
+  for (const worker of audioWorkers) {
+    await worker.close();
+  }
+
   await connection.quit();
   console.log('Workers and connection closed.');
   process.exit(0);
@@ -168,5 +162,5 @@ process.on('SIGINT', async () => {
 
 console.log('Workers and queues initialized.');
 
-// Export workers for external use (fixes unused variable warnings)
-export { translationWorker, audioWorker };
+// Export workers for external use
+export { translationWorker, audioWorkers };

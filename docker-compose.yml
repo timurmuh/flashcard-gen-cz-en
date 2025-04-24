@@ -8,5 +8,24 @@ services:
       - redis_data:/data
     restart: always
 
+  tts-server-cpu:
+    container_name: coqui-tts-cpu
+    build:
+      context: https://github.com/idiap/coqui-ai-TTS.git
+      dockerfile: Dockerfile
+    entrypoint: 'python3 TTS/server/server.py --model_name tts_models/cs/cv/vits --port 5002'
+    ports:
+      - "5002:5002"
+
+#  tts-server-gpu:
+#    extends:
+#        service: tts-server-cpu
+#    container_name: coqui-tts-gpu
+#    command:
+#      - 'python3 TTS/server/server.py --model_name tts_models/cs/cv/vits --port 5002 --use_cuda'
+#    entrypoint: 'python3 TTS/server/server.py --model_name tts_models/cs/cv/vits --port 5002 --use-cuda'
+#    ports:
+#      - "5003:5002"
+
 volumes:
   redis_data:
