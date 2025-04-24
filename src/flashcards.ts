@@ -114,7 +114,6 @@ function parseTimeInterval(interval: string): number {
   }
 }
 
-// TODO try responses API
 /**
  * Fetches the current credit information from OpenRouter
  */
@@ -139,6 +138,53 @@ export async function fetchOpenRouterRateLimit(): Promise<number> {
   const seconds = parseTimeInterval(interval);
 
   // Calculate requests per second
-  const rateLimit = Math.max(1, Math.ceil(requestsPerInterval / seconds));
+  const rateLimit = Math.max(1, requestsPerInterval / seconds);
   return rateLimit;
+}
+
+
+// Module-level state to track rate limiting
+let currentRateLimit = 1; // Default conservative limit (1 request per second)
+let lastRateLimitCheck = 0; // Timestamp when rate limit was last checked
+let lastRequestTime = 0; // Timestamp of the last API call
+const RATE_LIMIT_CHECK_INTERVAL = 60 * 1000; // Minimum 60 seconds between rate limit checks
+
+/**
+ * Rate-limited version of getFlashcardCompletion
+ * Automatically fetches and adjusts to the current rate limits
+ * @param czWord a word in Czech
+ */
+export async function rateLimitedGetFlashcardCompletion(
+  czWord: string,
+): Promise<FlashcardCompletionResponse> {
+  const now = Date.now();
+
+  // Check if we should update the rate limit
+  if (now - lastRateLimitCheck >= RATE_LIMIT_CHECK_INTERVAL) {
+    try {
+      currentRateLimit = await fetchOpenRouterRateLimit();
+      console.log(`Updated rate limit: ${currentRateLimit} requests per second`);
+      lastRateLimitCheck = now;
+    } catch (error) {
+      console.error('Failed to fetch rate limit:', error);
+      // Continue with existing rate limit
+    }
+  }
+
+  // Calculate how long to wait based on current rate limit
+  const minTimeBetweenRequests = 1000 / currentRateLimit;
+  const timeToWait = Math.max(0, minTimeBetweenRequests - (now - lastRequestTime));
+
+  // Wait if needed to respect rate limit
+  if (timeToWait > 0) {
+    await new Promise(resolve => setTimeout(resolve, timeToWait));
+  }
+
+  // Make the actual API call
+  const result = await getFlashcardCompletion(czWord);
+
+  // Update last request time after the call completes
+  lastRequestTime = Date.now();
+
+  return result;
 }
