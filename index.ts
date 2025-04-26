@@ -44,13 +44,13 @@ const audioQueue = new Queue(AUDIO_QUEUE_NAME, {
 const translationWorker = new Worker(
   QUEUE_NAME_TRANSLATION,
   async (job) => {
-    console.log('job', job.id, job.data);
+    // console.log('job', job.id, job.data);
     if (job.name === JOB_NAME_TRANSLATION) {
       const { word } = job.data;
 
       // Perform translation
       const translation = await getFlashcardCompletion(word);
-      console.log('Translation result:', translation);
+      // console.log('Translation result:', translation);
 
       // Generate hashes and enhance translation data with audio file paths
       const enhancedTranslation = translation.map(entry => {
@@ -93,14 +93,14 @@ function createAudioWorker(baseUrl: string): Worker {
   return new Worker(
     AUDIO_QUEUE_NAME,
     async (job: Job) => {
-      console.log('Audio job', job.id, job.data);
+      // console.log('Audio job', job.id, job.data);
       const { word, outputFile } = job.data;
       const outPath = `audio/${outputFile}`;
 
       const result: SpeechGenerationResult = await generateSpeechViaHttp(word, outPath, baseUrl);
 
       if (result.success) {
-        console.log(`Audio generated from ${baseUrl}: ${result.outputFile}`, result);
+        // console.log(`Audio generated from ${baseUrl}: ${result.outputFile}`, result);
         return result;
       } else {
         throw result;
@@ -144,10 +144,41 @@ async function logQueueProgress() {
   console.log(`[${timestamp}] Translation: ${translationDone}/${translationTotal} [${translationStatus}], Audio: ${audioDone}/${audioTotal} [${audioStatus}]`);
 }
 
-setInterval(logQueueProgress, 2000);
+// Track when queues become empty
+let emptyQueueTimestamp: number | null = null;
+const WAIT_FOR_NEW_JOBS_MS = 5000; // Wait 5 seconds to confirm no new jobs
 
-// Handle application shutdown to properly close workers
-process.on('SIGINT', async () => {
+async function checkAndExitIfDone() {
+  const translationCounts = await translationQueue.getJobCounts();
+  const audioCounts = await audioQueue.getJobCounts();
+
+  // Check for any active, waiting, delayed, or paused jobs
+  const pendingStatuses = ['active', 'waiting', 'delayed', 'paused'];
+  const anyPendingJobs = pendingStatuses.some(status =>
+    (translationCounts[status] || 0) > 0 || (audioCounts[status] || 0) > 0,
+  );
+
+  const now = Date.now();
+
+  if (!anyPendingJobs) {
+    if (emptyQueueTimestamp === null) {
+      // First time seeing empty queues
+      emptyQueueTimestamp = now;
+      console.log(`No pending jobs found. Will exit if this persists for ${WAIT_FOR_NEW_JOBS_MS / 1000} seconds...`);
+    } else if (now - emptyQueueTimestamp >= WAIT_FOR_NEW_JOBS_MS) {
+      // Queues remained empty for the waiting period
+      console.log(`No new jobs appeared in the last ${WAIT_FOR_NEW_JOBS_MS / 1000} seconds. Shutting down...`);
+
+      await gracefullyShutDown();
+    }
+  } else if (emptyQueueTimestamp !== null) {
+    // Reset if pending jobs appear again
+    console.log('Pending jobs detected, continuing execution...');
+    emptyQueueTimestamp = null;
+  }
+}
+
+async function gracefullyShutDown() {
   await translationWorker.close();
 
   // Close all audio workers
@@ -158,7 +189,17 @@ process.on('SIGINT', async () => {
   await connection.quit();
   console.log('Workers and connection closed.');
   process.exit(0);
-});
+}
+
+// Update the interval to check for completion
+setInterval(async () => {
+  await logQueueProgress();
+  await checkAndExitIfDone();
+}, 2000);
+
+
+// Handle application shutdown to properly close workers
+process.on('SIGINT', gracefullyShutDown);
 
 console.log('Workers and queues initialized.');
 
