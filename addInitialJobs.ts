@@ -2,7 +2,7 @@ import { Queue, Job } from 'bullmq';
 import wordsFile from './words.txt';
 import { JOB_NAME_TRANSLATION, QUEUE_NAME_TRANSLATION } from './src/constants.ts';
 
-const TESTING = true;
+const TESTING = false;
 
 async function main() {
   let words = wordsFile

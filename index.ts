@@ -84,6 +84,7 @@ const translationWorker = new Worker(
   },
   {
     connection,
+    concurrency: 50,
     limiter: { max: 10, duration: 1000 },
   },
 );
@@ -109,7 +110,7 @@ function createAudioWorker(baseUrl: string): Worker {
     },
     {
       connection,
-      concurrency: process.platform === 'darwin' ? 1 : 10, // Concurrency 1 on macOS
+      concurrency: ttsBackends.length * 10, // Concurrency 1 on macOS
     },
   );
 }
