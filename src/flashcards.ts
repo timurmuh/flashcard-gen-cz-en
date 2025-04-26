@@ -63,7 +63,7 @@ export async function getFlashcardCompletion(czWord: string): Promise<FlashcardC
 
   const response = await client.chat.completions.create(params);
 
-  console.log('Completions response\n', JSON.stringify(response, null, 2));
+  // console.log('Completions response\n', JSON.stringify(response, null, 2));
 
   const content = response.choices[0].message.content;
   if (!content) {

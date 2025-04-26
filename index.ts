@@ -1,6 +1,6 @@
 import { Job, Queue, Worker } from 'bullmq';
 import { generateSpeechViaHttp, type SpeechGenerationResult } from './src/tts.ts';
-import { getFlashcardCompletion } from './src/flashcards.ts';
+import { getFlashcardCompletion, rateLimitedGetFlashcardCompletion } from './src/flashcards.ts';
 import { AUDIO_JOB_NAME, AUDIO_QUEUE_NAME, JOB_NAME_TRANSLATION, QUEUE_NAME_TRANSLATION } from './src/constants.ts';
 import path from 'path';
 import IORedis from 'ioredis';
@@ -49,7 +49,7 @@ const translationWorker = new Worker(
       const { word } = job.data;
 
       // Perform translation
-      const translation = await getFlashcardCompletion(word);
+      const translation = await rateLimitedGetFlashcardCompletion(word);
       // console.log('Translation result:', translation);
 
       // Generate hashes and enhance translation data with audio file paths

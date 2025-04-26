@@ -117,7 +117,6 @@ export async function generateSpeechViaHttp(
   outPath: string,
   baseUrl: string,
 ): Promise<SpeechGenerationResult> {
-  console.log(`Generating speech for "${text}" to ${outPath} using ${baseUrl}`);
   if (!outPath) {
     throw new Error('Output path is required!');
   }
