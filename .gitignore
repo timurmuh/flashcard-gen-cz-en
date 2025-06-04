@@ -176,3 +176,7 @@ dist
 
 # Python virtualenv
 .venv
+
+# generated audio files
+audio
+translations.csv
