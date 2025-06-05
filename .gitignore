@@ -180,3 +180,5 @@ dist
 # generated audio files
 audio
 translations.csv
+translations_reordered.csv
+words_sequence.json

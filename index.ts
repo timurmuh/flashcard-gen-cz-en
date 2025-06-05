@@ -1,6 +1,6 @@
 import { Job, Queue, Worker } from 'bullmq';
 import { generateSpeechViaHttp, type SpeechGenerationResult } from './src/tts.ts';
-import { getFlashcardCompletion, rateLimitedGetFlashcardCompletion } from './src/flashcards.ts';
+import { rateLimitedGetFlashcardCompletion } from './src/flashcards.ts';
 import { AUDIO_JOB_NAME, AUDIO_QUEUE_NAME, JOB_NAME_TRANSLATION, QUEUE_NAME_TRANSLATION } from './src/constants.ts';
 import path from 'path';
 import IORedis from 'ioredis';
@@ -53,7 +53,7 @@ const translationWorker = new Worker(
       // console.log('Translation result:', translation);
 
       // Generate hashes and enhance translation data with audio file paths
-      const enhancedTranslation = translation.map(entry => {
+      const enhancedTranslation = translation.map((entry) => {
         const czechWordHash = hashString(entry.czechWord);
         const czechContextHash = hashString(entry.czechContext);
 
@@ -86,7 +86,7 @@ const translationWorker = new Worker(
     connection,
     concurrency: 50,
     limiter: { max: 10, duration: 1000 },
-  },
+  }
 );
 
 // Audio worker factory that creates a worker for each TTS backend
@@ -106,17 +106,16 @@ function createAudioWorker(baseUrl: string): Worker {
       } else {
         throw result;
       }
-
     },
     {
       connection,
       concurrency: ttsBackends.length * 10, // Concurrency 1 on macOS
-    },
+    }
   );
 }
 
 // Create workers for each TTS backend
-const audioWorkers = ttsBackends.map(baseUrl => createAudioWorker(baseUrl));
+const audioWorkers = ttsBackends.map((baseUrl) => createAudioWorker(baseUrl));
 
 async function logQueueProgress() {
   const translationCounts = await translationQueue.getJobCounts();
@@ -142,7 +141,9 @@ async function logQueueProgress() {
   const translationStatus = formatStatusSummary(translationCounts);
   const audioStatus = formatStatusSummary(audioCounts);
 
-  console.log(`[${timestamp}] Translation: ${translationDone}/${translationTotal} [${translationStatus}], Audio: ${audioDone}/${audioTotal} [${audioStatus}]`);
+  console.log(
+    `[${timestamp}] Translation: ${translationDone}/${translationTotal} [${translationStatus}], Audio: ${audioDone}/${audioTotal} [${audioStatus}]`
+  );
 }
 
 // Track when queues become empty
@@ -155,8 +156,8 @@ async function checkAndExitIfDone() {
 
   // Check for any active, waiting, delayed, or paused jobs
   const pendingStatuses = ['active', 'waiting', 'delayed', 'paused'];
-  const anyPendingJobs = pendingStatuses.some(status =>
-    (translationCounts[status] || 0) > 0 || (audioCounts[status] || 0) > 0,
+  const anyPendingJobs = pendingStatuses.some(
+    (status) => (translationCounts[status] || 0) > 0 || (audioCounts[status] || 0) > 0
   );
 
   const now = Date.now();
@@ -197,7 +198,6 @@ setInterval(async () => {
   await logQueueProgress();
   await checkAndExitIfDone();
 }, 2000);
-
 
 // Handle application shutdown to properly close workers
 process.on('SIGINT', gracefullyShutDown);

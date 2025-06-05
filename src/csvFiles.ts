@@ -1,14 +1,14 @@
 // Define proper type for translation entries
 import fs from 'fs';
 
-type TranslationEntry = {
+export type TranslationEntry = {
   czechWord: string;
   czechContext: string;
   englishWord: string;
   englishContext: string;
   czechWordAudio?: string;
   czechContextAudio?: string;
-}
+};
 
 export function writeTranslationToCsv(translation: TranslationEntry[], csvPath: string) {
   // Helper function to escape CSV fields
