@@ -5,7 +5,7 @@
   "scripts": {
     "start": "bun index.ts",
     "addInitialJobs": "bun addInitialJobs.ts",
-    "reorderTranslations": "bun scripts/reorderTranslationsCsv.ts translations.csv translations_reordered.csv",
+    "reorderTranslations": "bun scripts/reorderTranslationsCsv.ts translations_cleaned.csv translations_reordered.csv",
     "visualization": "bun schedule-visualization/index.html",
     "test": "jest"
   },
